@@ -1,5 +1,8 @@
 package Gdx_Risk;
 
+import Gdx_Risk.Map.Coord;
+import Gdx_Risk.Map.Prov;
+import Gdx_Risk.Map.Prov_Id;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -20,6 +23,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 public class Assets {
@@ -32,13 +36,14 @@ public class Assets {
     static int hexes_per_row;
     static String asset_directory_path;
     static boolean render_infobar_background_bool = false;
+    static int test;
 
-    static int[][] prov_lookup;
     static float sea_color_float[];//background color
     static String[] libgdx_colors;
     static int no_provs;
-    static int[][] navtree;
+    static HashMap<Integer, Prov_Id[]> navtree;
 
+    static Prov_Lookup prov_lookup;
     static private float[] hex_outline_vert_coords;
     static private PolygonSprite sea_poly;
     static private PolygonSpriteBatch polyBatch;
@@ -46,12 +51,13 @@ public class Assets {
     static private Color sea_hex_color;
     static private String map_data_file_path;
     static private PolygonSprite[] prov_sprite_array;
-    static private Triple[] prov_edge_verts;
-    static private Pair[] hex_outline_verts;
+    static private Pair<Coord, Integer>[] prov_edge_verts;
+    static private Pair<Pair<Object, Float>, Pair<Object, Float>>[] hex_outline_verts;
     static private String[] prov_names;
 
 
-    public static void load()  {
+
+    static void load()  {
 
         class Loading{
             private void load_file_paths(){
@@ -125,27 +131,52 @@ public class Assets {
         navtree=NavTree.build();
     }
 
-    public static String get_prov_name(int prov_id){
-        return prov_names[prov_id];
+    class Prov_Lookup{
+        private int[][] prov_lookup;
+
+        Prov_Lookup(int[][] prov_lookup){
+            this.prov_lookup = prov_lookup;
+        }
+
+        Prov_Id resolve_prov_id(Coord coord){
+            //dumps coords if it's outside of the grid
+            System.out.println(coord);
+            if ( coord.getX()<0|| coord.getY()<0||
+                    !(coord.getX() < hexes_per_row)|| !(coord.getY() < hexes_per_column)){
+                return new Prov_Id(-1);
+            }else {
+                return new Prov_Id(prov_lookup[coord.getY()][coord.getX()]);
+            }
+        }
+
+        int get_y_len(){
+            return this.prov_lookup.length;
+        }
+        int get_x_len(){
+            return this.prov_lookup[0].length;
+        }
     }
 
-
+    static String get_prov_name(Prov_Id prov_id){
+        return prov_names[prov_id.to_int()];
+    }
 
     private static class NavTree{
         // builds a 2d array where each index is a prov id and contains the provs it's connected to
-        public static int[][]  build() {
+        // todo turn this into a hashmap
+        static Prov_Id[][]  build() {
             //esch index matches a province id
             //each indexindex is a province it's connected to
             int[][] nav_tree = new int[prov_sprite_array.length][];
-            ArrayList<Integer> connected_provs = new ArrayList<>();
+            ArrayList<Prov_Id> connected_provs = new ArrayList<>();
 
             // Searches each index in the prov_lookup and looks for neighbours bij comparing prov_ids
             //TODO? this could be a lot more efficient
             //TODO this method does not search the provences on the edge of the grid
             for (int current_prov_id = 0; current_prov_id < prov_sprite_array.length; current_prov_id++) {
-                for (int prov_x = 1; prov_x < prov_lookup.length - 2; prov_x++) {
-                    for (int prov_y = 1; prov_y < prov_lookup[0].length - 2; prov_y++) {
-                        connected_provs = check_prov(prov_x, prov_y,current_prov_id,connected_provs);
+                for (int prov_x = 1; prov_x < prov_lookup.get_y_len() - 2; prov_x++) {
+                    for (int prov_y = 1; prov_y < prov_lookup.get_x_len() - 2; prov_y++) {
+                        connected_provs = check_prov(new Coord(prov_x, prov_y), new Prov_Id(current_prov_id) ,connected_provs);
                     }
                 }
                 nav_tree[current_prov_id] = Util.int_arraylist_to_array(connected_provs);
@@ -166,30 +197,30 @@ public class Assets {
             System.out.print("\n");*/
             return nav_tree;
         }
-        private static ArrayList<Integer> check_prov(int prov_x, int prov_y, int currentprov, ArrayList<Integer> connected_provs){
+        private static ArrayList<Prov_Id> check_prov(Coord prov, Prov_Id currentprov, ArrayList<Prov_Id> connected_provs){
             //currentprov is the prof it's checking the borders of
             //because the id for sea is -1 it should never come up
-            if (prov_lookup[prov_x][prov_y]==currentprov){
-                connected_provs = compare_provs(prov_x, prov_y+1, currentprov, connected_provs);
-                connected_provs = compare_provs(prov_x, prov_y-1, currentprov, connected_provs);
-                connected_provs = compare_provs(prov_x+1, prov_y, currentprov, connected_provs);
-                connected_provs = compare_provs(prov_x-1, prov_y, currentprov, connected_provs);
+
+            if (prov_lookup.resolve_prov_id(prov) == currentprov){
+                connected_provs = compare_provs(prov.transl_y(1), currentprov, connected_provs);
+                connected_provs = compare_provs(prov.transl_y(-1), currentprov, connected_provs);
+                connected_provs = compare_provs(prov.transl_x(1), currentprov, connected_provs);
+                connected_provs = compare_provs(prov.transl_x(-1), currentprov, connected_provs);
                 //the only part that's different depending on whether the collum is even or not
-                if (prov_x % 2==0) {
-                    connected_provs = compare_provs(prov_x+1, prov_y-1, currentprov, connected_provs);
-                    connected_provs = compare_provs(prov_x-1, prov_y-1, currentprov, connected_provs);
+                if (prov.getX() % 2==0) {
+                    connected_provs = compare_provs(prov.transl(1 , -1), currentprov, connected_provs);
+                    connected_provs = compare_provs(prov.transl(-1, -1), currentprov, connected_provs);
                 }else{
-                    connected_provs = compare_provs(prov_x+1, prov_y+1, currentprov, connected_provs);
-                    connected_provs = compare_provs(prov_x-1, prov_y+1, currentprov, connected_provs);
+                    connected_provs = compare_provs(prov.transl(1, 1), currentprov, connected_provs);
+                    connected_provs = compare_provs(prov.transl(-1,1 ), currentprov, connected_provs);
                 }
             }
 
-
             return connected_provs;
         }
-        private static ArrayList<Integer> compare_provs(int prov_x, int prov_y, int current_prov, ArrayList<Integer> connected_provs){
-            int compare_prov_id = prov_lookup[prov_x][prov_y];
-            if (compare_prov_id != -1){
+        private static ArrayList<Prov_Id> compare_provs(Coord prov, Prov_Id current_prov, ArrayList<Prov_Id> connected_provs){
+            Prov_Id compare_prov_id = prov_lookup.resolve_prov_id(prov);
+            if (compare_prov_id.to_int() != -1){
                 if (current_prov != compare_prov_id){
                     if (!connected_provs.contains(compare_prov_id)){
                         connected_provs.add(compare_prov_id);
@@ -203,68 +234,62 @@ public class Assets {
     private static class Prov_edge_verts{
         // Creates an array containing the vertecies of the edges of provinces in the following format: prov_x, prov_y, vert_num
         //TODO could be more efficient. draws a lot of lines twice.
-        public static void build(){
+        static void build(){
 
-            ArrayList<Triple<Integer, Integer, Integer>> prov_edge_verts_list = new ArrayList<Triple<Integer, Integer, Integer>>();
+            ArrayList<Pair<Coord, Integer>> prov_edge_verts_list = new ArrayList<>();
             for (int prov_x = 0; prov_x < prov_lookup.length; prov_x++) {
                 for (int prov_y = 0; prov_y < prov_lookup[0].length; prov_y++) {
-                    check_prov(new Pair<Integer,Integer>(prov_x,prov_y),prov_edge_verts_list);
+                    check_prov(new Coord(prov_x,prov_y),prov_edge_verts_list);
                 }
             }
 
-            prov_edge_verts = prov_edge_verts_list.toArray(new Triple[0]);
+            prov_edge_verts = prov_edge_verts_list.toArray(new Pair[0]);
         }
 
-        private static ArrayList<Triple<Integer, Integer, Integer>> check_prov(Pair<Integer,Integer> currentprov, ArrayList<Triple<Integer, Integer, Integer>> prov_edge_verts_list){
+        private static ArrayList<Pair<Coord, Integer>>
+                   check_prov(Coord c_prov,
+                   ArrayList<Pair<Coord, Integer>> prov_edge_verts_list){
             //currentprov is the prof it's checking the borders of
             //because the id for sea is -1 it should never come up
             //vert_num is the hex vert index in hex_outline_verts
 
-            int prov_x = currentprov.getFirst();
-            int prov_y = currentprov.getSecond();
-
-            prov_edge_verts_list = compare_provs(prov_x, prov_y+1, currentprov, prov_edge_verts_list, 4);
-            prov_edge_verts_list = compare_provs(prov_x, prov_y-1, currentprov, prov_edge_verts_list, 1);
+            prov_edge_verts_list = compare_provs(c_prov.transl_y(1), c_prov, prov_edge_verts_list, 4);
+            prov_edge_verts_list = compare_provs(c_prov.transl_y(-1), c_prov, prov_edge_verts_list, 1);
             //the part that's different depending on whether the collum is even or not
-            if (prov_x % 2==0) {
-                prov_edge_verts_list = compare_provs(prov_x+1, prov_y, currentprov, prov_edge_verts_list, 3);
-                prov_edge_verts_list = compare_provs(prov_x-1, prov_y, currentprov, prov_edge_verts_list, 5);
-                prov_edge_verts_list = compare_provs(prov_x+1, prov_y-1, currentprov, prov_edge_verts_list,2);
-                prov_edge_verts_list = compare_provs(prov_x-1, prov_y-1, currentprov, prov_edge_verts_list,0);
+            if (c_prov.getX() % 2==0) {
+                prov_edge_verts_list = compare_provs(c_prov.transl_x(1), c_prov, prov_edge_verts_list, 3);
+                prov_edge_verts_list = compare_provs(c_prov.transl_x(-1), c_prov, prov_edge_verts_list, 5);
+                prov_edge_verts_list = compare_provs(c_prov.transl(1, -1), c_prov, prov_edge_verts_list,2);
+                prov_edge_verts_list = compare_provs(c_prov.transl(-1, -1), c_prov, prov_edge_verts_list,0);
             }else{
-                prov_edge_verts_list = compare_provs(prov_x+1, prov_y, currentprov, prov_edge_verts_list, 2);
-                prov_edge_verts_list = compare_provs(prov_x-1, prov_y, currentprov, prov_edge_verts_list, 0);
-                prov_edge_verts_list = compare_provs(prov_x+1, prov_y+1, currentprov, prov_edge_verts_list, 3);
-                prov_edge_verts_list = compare_provs(prov_x-1, prov_y+1, currentprov, prov_edge_verts_list, 5);
+                prov_edge_verts_list = compare_provs(c_prov.transl_x(1), c_prov, prov_edge_verts_list, 2);
+                prov_edge_verts_list = compare_provs(c_prov.transl_x(-1), c_prov, prov_edge_verts_list, 0);
+                prov_edge_verts_list = compare_provs(c_prov.transl(1,1), c_prov, prov_edge_verts_list, 3);
+                prov_edge_verts_list = compare_provs(c_prov.transl(-1, 1), c_prov, prov_edge_verts_list, 5);
             }
 
             return prov_edge_verts_list;
         }
 
-        private static ArrayList<Triple<Integer, Integer, Integer>> compare_provs(int prov_x, int prov_y, Pair<Integer, Integer> currentprov
-                , ArrayList<Triple<Integer, Integer, Integer>> prov_edge_verts_list, int vert_num){
+        private static ArrayList<Pair<Coord, Integer>> compare_provs(Coord prov, Coord currentprov
+                , ArrayList<Pair<Coord, Integer>> prov_edge_verts_list, int vert_num){
 
-            if (prov_x<0|| prov_x>prov_lookup.length-1|| prov_y<0|| prov_y>prov_lookup[0].length-1){
+            if (prov.getX()<0|| prov.getX()>prov_lookup.length-1|| prov.getY()<0|| prov.getY()>prov_lookup[0].length-1){
                 //if the coordinate is outside of the hex grid and it it's not from a sea prov it automatically adds a line
-                if (resolve_prov_id(currentprov)!=-1){
-                    prov_edge_verts_list.add(new Triple<Integer,Integer,Integer>(currentprov.getFirst(),currentprov.getSecond(),vert_num));
+                if (prov_lookup.resolve_prov_id(currentprov).to_int()!=-1){
+                    prov_edge_verts_list.add(new Pair<>(currentprov, vert_num));
                 }
             }else{
-                if (resolve_prov_id(currentprov) != resolve_prov_id(prov_x,prov_y)){
-                    prov_edge_verts_list.add(new Triple<>(currentprov.getFirst(),currentprov.getSecond(),vert_num));
+                
+                if (prov_lookup.resolve_prov_id(currentprov) != prov_lookup.resolve_prov_id(prov)){
+                    prov_edge_verts_list.add(new Pair<>(currentprov, vert_num));
                 }
             }
             return prov_edge_verts_list;
         }
     }
 
-    public static int resolve_prov_id (int prov_x, int prov_y){
-        return prov_lookup[prov_x][prov_y];
-    }
 
-    public static int resolve_prov_id (Pair<Integer,Integer> coords){
-        return prov_lookup[coords.getFirst()][coords.getSecond()];
-    }
 
     private static class Create_Hex_sprite{
         public static PolygonSprite polygon_sprite_builder(Color color)		{
@@ -320,36 +345,38 @@ public class Assets {
     }
 
     static class HexGrid {
-
+        static boolean did_render = false;
         static void render(){
             //renders hexgrid
 
-            int outline_origin_X = 0; //(scr_width % (halfhex+quarthex)) / 4;//TODO ofset set to 0 for debugging
-            int outline_origin_Y = scr_height-hex_size-halfhex-30; //((scr_height - halfhex) % (hexsize))/ 2;//why do i have to divide by 4?
-            //-30 to make room for button bar
-            //Y asxis flipped to line up with mouse axis
+            if (!did_render){
+                int outline_origin_X = 0; //(scr_width % (halfhex+quarthex)) / 4;//TODO ofset set to 0 for debugging
+                int outline_origin_Y = scr_height-hex_size-halfhex-30; //((scr_height - halfhex) % (hexsize))/ 2;//why do i have to divide by 4?
+                //-30 to make room for button bar
+                //Y asxis flipped to line up with mouse axis
 
-            int drawnhex_origin_Y = outline_origin_Y;
+                int drawnhex_origin_Y = outline_origin_Y;
 
-            polyBatch.begin();
-            for(int i=0; i<hexes_per_row; i++){
-                if (i % 2 == 0)	{
-                    //hex_poly_sprite.translateY(halfhex);
-                    drawnhex_origin_Y += halfhex;
+                polyBatch.begin();
+                for(int i=0; i<hexes_per_row; i++){
+                    if (i % 2 == 0)	{
+                        drawnhex_origin_Y += halfhex;
+                    }
+                    for(int j=0; j<hexes_per_column; j++){
+                        if (prov_lookup[j][i] != -1) {//if it's sea
+                            PolygonSprite sprite = prov_sprite_array[Game.Data.who_owns(
+                                    new Prov_Id( prov_lookup[j][i]))];
+                            draw_hex(sprite, outline_origin_X, drawnhex_origin_Y);
+                        }
+                        drawnhex_origin_Y = drawnhex_origin_Y -hex_size;
+                    }
+                    outline_origin_X += halfhex+quarthex;
+                    drawnhex_origin_Y = outline_origin_Y;
                 }
-                for(int j=0; j<hexes_per_column; j++){
-                    if (prov_lookup[i][j] != -1) {//if it's sea
-                        draw_hex(prov_sprite_array[Game.Data.who_owns(prov_lookup[i][j])], outline_origin_X, drawnhex_origin_Y);
-                    }/*else{//for debugging
-                        draw_hex(sea_poly, outline_origin_X, drawnhex_origin_Y);
-                    }*/
-                    drawnhex_origin_Y = drawnhex_origin_Y -hex_size;
-                }
-                outline_origin_X += halfhex+quarthex;
-                drawnhex_origin_Y = outline_origin_Y;
+                polyBatch.end();
+                draw_borders();
             }
-            polyBatch.end();
-            draw_borders();
+            //did_render = true;
         }
 
         //TODO add alphablending
@@ -421,7 +448,7 @@ public class Assets {
 
     private static class IO{
         public static void load_map_data() throws IOException { //main methode that's called to save state to disk
-            InputStream inputStream = new FileInputStream(map_data_file_path);
+             InputStream inputStream = new FileInputStream(map_data_file_path);
             Reader inputStreamReader = new InputStreamReader(inputStream);
 
             String file_input = "";
@@ -448,8 +475,6 @@ public class Assets {
             for (int i = 0; i <tmp_prov_lookup_list.size() ; i++) {
                 prov_lookup[i]= Util.int_arraylist_to_array(tmp_prov_lookup_list.get(i));
             }
-
-            
         }
 
         private static Pair<ArrayList<ArrayList<Integer>>, ArrayList<PolygonSprite>>

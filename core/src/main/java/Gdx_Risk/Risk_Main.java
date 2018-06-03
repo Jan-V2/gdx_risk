@@ -1,5 +1,7 @@
 package Gdx_Risk;
 
+import Gdx_Risk.Map.Coord;
+import Gdx_Risk.Map.Prov_Id;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
@@ -7,9 +9,13 @@ import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.GL20;
 import com.github.czyzby.kiwi.util.tuple.immutable.Pair;
 import com.badlogic.gdx.Input.Keys;
-import visuitest.Kotlin_Obj_;
 
 public class Risk_Main extends ApplicationAdapter {
+
+//TODO put all the todos into a .todo file
+//TODO make the menu bar a real menu bar
+//TODO rotate provlookup
+//TODO put provlookup in map object
 
 //TODO figure out game screens
 //TODO add continents
@@ -25,8 +31,6 @@ public class Risk_Main extends ApplicationAdapter {
 
     @Override
     public void create(){
-        Kotlin_Obj_ test = new Kotlin_Obj_();
-        test.print_stuff();
         Assets.load();
         Game.load_gamedata();
         //sets background
@@ -73,35 +77,18 @@ public class Risk_Main extends ApplicationAdapter {
 
         @Override
         public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-            //to make room for the button bar
-            int scr_height = Gdx.graphics.getHeight();
-            int scr_width = Gdx.graphics.getWidth();
-            int hexes_per_column = (scr_height - Assets.halfhex) / (Assets.hex_size);
-            int hexes_per_row = scr_width / (Assets.halfhex+Assets.quarthex);
-
             //to filter out negative numbers
             if (screenX < 0 || screenY-30 < 0){
                 return true;
             }
 
-            Pair clicked_hex = resolve_hex(screenX,screenY);
+            Coord clicked_hex = resolve_hex(screenX,screenY);
 
-            int clicked_prov_id;
-
-            //dumps coords if it's outside of the grid
-            if ((int)clicked_hex.getFirst()<0||(int)clicked_hex.getSecond()<0||
-                    (int)clicked_hex.getFirst()>=hexes_per_row-1||(int)clicked_hex.getSecond()>=hexes_per_column-1){
-                clicked_prov_id = -1;
-            }else {
-                clicked_prov_id = Assets.resolve_prov_id(clicked_hex);
-            }
-
-
-            mouse_click_handeler(clicked_prov_id, screenX, screenY);
+            mouse_move_handeler(Assets.prov_lookup.resolve_prov_id(clicked_hex), screenX, screenY);
             return true;
         }
 
-        private Pair resolve_hex(int screenX,int screenY){
+        private Coord resolve_hex(int screenX,int screenY){
             //resolves the hex coordinates from mouse coordinates
 
 
@@ -111,11 +98,11 @@ public class Risk_Main extends ApplicationAdapter {
             screenX = screenX - grid_offsetX;
             screenY = screenY - grid_offsetY; //first resolve column then row. if column is even then -halfhex
 
-            Double tmp1 = new Double((screenX / Assets.quarthex));
+            Double tmp1 = (double) (screenX / Assets.quarthex);
             int quarthex_X = tmp1.intValue();
             int hex_grid_X = quarthex_X / 3;//used both as final result and as full_hex_x
 
-            Double tmp2 = new Double((screenY / Assets.halfhex +0.5f));
+            Double tmp2 = (double) (screenY / Assets.halfhex + 0.5f);
             int halfhex_Y = tmp2.intValue();
             int hex_grid_Y = halfhex_Y / 2;
 
@@ -144,7 +131,7 @@ public class Risk_Main extends ApplicationAdapter {
 
             // calculates y offset
             if (halfhex_Y % 2 == 0)	{ //not sure what this line does, but it was in the origanal code.
-                if (quarthex_X % 3 > 0)	{//if it's in a sqaure row
+                if (quarthex_X % 3 > 0)	{//if it's in a square row
                     if (hex_grid_X % 2 == 0)	{
                         Y_offset = 0;
                     } else	{
@@ -159,7 +146,7 @@ public class Risk_Main extends ApplicationAdapter {
             hex_grid_Y = hex_grid_Y + Y_offset;
             hex_grid_X = hex_grid_X + X_offset;
 
-            return new Pair(hex_grid_X,hex_grid_Y);
+            return new Coord(hex_grid_X, hex_grid_Y);
         }
         private int Y_grid_offset_calc (int X_remain, int Y_remain, int fullhex_X, int quarthex)		{
             int Y_offset;
@@ -213,6 +200,8 @@ public class Risk_Main extends ApplicationAdapter {
             return offset;
         }
 
+
+
         @Override
         public boolean touchUp(int screenX, int screenY, int pointer, int button) {
             return true;
@@ -222,32 +211,15 @@ public class Risk_Main extends ApplicationAdapter {
             return false;
         }
         @Override
-        public boolean mouseMoved(int screenX, int screenY) {//TODO dubplicate code
-            //to make room for the button bar
-            int scr_height = Gdx.graphics.getHeight();
-            int scr_width = Gdx.graphics.getWidth();
-            int hexes_per_column = (scr_height - Assets.halfhex) / (Assets.hex_size);
-            int hexes_per_row = scr_width / (Assets.halfhex+Assets.quarthex);
-
+        public boolean mouseMoved(int screenX, int screenY) {
             //to filter out negative numbers
             if (screenX < 0 || screenY-30 < 0){
                 return true;
             }
 
-            Pair clicked_hex = resolve_hex(screenX,screenY);
-            int clicked_prov_id;
+            Coord clicked_hex = resolve_hex(screenX,screenY);
 
-            //dumps coords if it's outside of the grid
-            if ((int)clicked_hex.getFirst()<0||(int)clicked_hex.getSecond()<0||
-                    (int)clicked_hex.getFirst()>=hexes_per_row-1||(int)clicked_hex.getSecond()>=hexes_per_column-1){
-
-                clicked_prov_id = -1;
-            }else {
-                clicked_prov_id = Assets.resolve_prov_id(clicked_hex);
-            }
-
-
-            mouse_move_handeler(clicked_prov_id, screenX, screenY);
+            mouse_move_handeler(Assets.prov_lookup.resolve_prov_id(clicked_hex), screenX, screenY);
             return true;
         }
 
@@ -257,8 +229,8 @@ public class Risk_Main extends ApplicationAdapter {
         }
     }
 
-    private void mouse_move_handeler(int clicked_prov_id, int screenX, int screenY) {
-        if (clicked_prov_id != -1){
+    private void mouse_move_handeler(Prov_Id clicked_prov_id, int screenX, int screenY) {
+        if (clicked_prov_id.to_int() != -1){
             UI.prov_info.setVisible(true);
             UI.set_prov_tooltip(clicked_prov_id,screenX,screenY);
         }else {
@@ -266,11 +238,11 @@ public class Risk_Main extends ApplicationAdapter {
         }
     }
 
-    private void mouse_click_handeler(int clicked_prov_id, int screen_x, int screen_y){
-        if (clicked_prov_id != -1){
+    private void mouse_click_handeler(Prov_Id clicked_prov_id){ //, int screen_x, int screen_y // not used
+        if (clicked_prov_id.to_int() != -1){
             if (clicked_prov_id!=Game.selected_prov
                     &&Game.Data.who_owns(clicked_prov_id)!=Game.active_player
-                    &&Game.Data.is_connected(clicked_prov_id,Game.selected_prov)){//if attack is possible
+                    &&Game.Data.is_connected(clicked_prov_id.to_int(), Game.selected_prov.to_int())){//if attack is possible
                 UI.call_confirm_attack_window(Game.selected_prov, clicked_prov_id);
             }
             if (Game.Data.who_owns(clicked_prov_id)== Game.active_player){

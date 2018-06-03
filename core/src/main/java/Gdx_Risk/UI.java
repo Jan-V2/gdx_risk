@@ -1,6 +1,8 @@
 package Gdx_Risk;
 
 
+import Gdx_Risk.Map.Prov;
+import Gdx_Risk.Map.Prov_Id;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Button;
@@ -19,7 +21,7 @@ import com.kotcrab.vis.ui.widget.VisLabel;
 import com.kotcrab.vis.ui.widget.VisTable;
 import com.kotcrab.vis.ui.widget.VisWindow;
 
-public class UI {
+class UI {
     static Stage stage;
     static Tooltip prov_info;
     static private Skin skin;
@@ -36,7 +38,7 @@ public class UI {
     //TODO add setup screen
     //TODO add card screen
     //TODO add menubar for saving/loading game?
-    public static void init_UI() {//todo cleanup
+    static void init_UI() {//todo cleanup
 	VisUI.load();
         stage = new Stage(new ScreenViewport());
         skin = VisUI.getSkin();
@@ -76,10 +78,10 @@ public class UI {
         private static int dialog_display_secs = 5; // the num of secs before the dialog
         private boolean timer_active = false;
 
-        public int info_bar_height;
+        int info_bar_height;
 
 
-        public Info_Bar(){
+        Info_Bar(){
             stage.addActor(active_player_label);
             stage.addActor(dialog_label);
             stage.addActor(phase_label);
@@ -92,19 +94,19 @@ public class UI {
             Assets.render_infobar_background_bool = true;
         }
 
-        public void update_player_label(){
+        void update_player_label(){
             active_player_label.setText("Player "+(Game.active_player + 1)+"'s turn");
             active_player_label.pack();
             active_player_label.setPosition(0,0);
         }
 
-        public void update_turn_phase_label(){
+        void update_turn_phase_label(){
             phase_label.setText(Game.State.Turn_State.get_turn_phase_name());
             phase_label.pack();
             phase_label.setPosition(stage.getWidth()-phase_label.getWidth(),0);
         }
 
-        public void push_dialog(String message){//pushes a string to the dialog box and sets the timer
+        void push_dialog(String message){//pushes a string to the dialog box and sets the timer
             dialog_label.setText(message);
             dialog_label.pack();
             dialog_label.setPosition((stage.getWidth()/2) - (dialog_label.getWidth()/2),0);
@@ -113,7 +115,7 @@ public class UI {
 
         }
 
-        public void set_default_dialog() {
+        void set_default_dialog() {
 
             if (Game.State.turn_state < 2) {
                 dialog_label.setText("Press enter to end " + Game.State.Turn_State.get_turn_phase_name());
@@ -124,7 +126,7 @@ public class UI {
             dialog_label.setPosition((stage.getWidth() / 2) - (dialog_label.getWidth() / 2), 0);
         }
 
-        public void update_dialog_timer(Float time_since_last_frame){
+        void update_dialog_timer(Float time_since_last_frame){
             if (timer_active){
                 dialog_timer += time_since_last_frame;
                 if (dialog_timer > (float)dialog_display_secs){
@@ -179,14 +181,14 @@ public class UI {
     }
 
     private static class Prov_Info_Tooltip extends Tooltip{
-        public Prov_Info_Tooltip(){
+        Prov_Info_Tooltip(){
             setVisible(false);
             setAppearDelayTime(0f);
             setFadeTime(0f);
         }
     }
 
-    public static void set_prov_tooltip(int prov_id, int screenX, int screenY) {
+    static void set_prov_tooltip(Prov_Id prov_id, int screenX, int screenY) {
         if (disable_map_layer){
             prov_info.setVisible(false);
         }else {
@@ -211,7 +213,7 @@ public class UI {
 
     }
 
-    public static void call_confirm_attack_window(int prov_from,int prov_to ){
+    static void call_confirm_attack_window(Prov_Id prov_from, Prov_Id prov_to){
         if (!(confirm_attack_window_is_opened) && !disable_map_layer){
             confirm_attack_window.open(prov_from, prov_to);
         }
@@ -238,7 +240,7 @@ public class UI {
 
     private static class Confirm_Attack extends UI_Window {
         //TODO redesign cuz it's shit
-        private void open(int prov_from,int prov_to ){
+        private void open(Prov_Id prov_from,Prov_Id prov_to ){
             confirm_attack_window_is_opened = true;
 
             get_label_window(this,"You are about to attack "+Assets.get_prov_name(prov_from)
@@ -286,7 +288,7 @@ public class UI {
         int defender_losses_total = 0;
         int attacker_losses_total = 0;
 
-        private void intitial_attack_window(int prov_from, int prov_to) {
+        private void intitial_attack_window(Prov_Id prov_from, Prov_Id prov_to) {
             //this gets opened when you fist initate an attack
 
             Button attack_button = get_button("attack");
@@ -307,8 +309,8 @@ public class UI {
 
         }
 
-        public void continue_attack_window(int prov_from, int prov_to
-					   , int defender_losses_arg, int attacker_losses_arg) {
+        void continue_attack_window(Prov_Id prov_from, Prov_Id prov_to
+                , int defender_losses_arg, int attacker_losses_arg) {
 
             // this is the window once at least one round of combat has taken place
             // but no one has won yet.
@@ -348,8 +350,8 @@ public class UI {
 
         }
 
-        public void attack_end_screeen(int prov_from, int prov_to
-				       , int defender_losses_arg, int attacker_losses_arg, boolean victory) {
+        void attack_end_screeen(Prov_Id prov_from, Prov_Id prov_to
+                , int defender_losses_arg, int attacker_losses_arg, boolean victory) {
             // this is the window that is displayed when either side has won
             defender_losses_total+=defender_losses_arg;
             attacker_losses_total+=attacker_losses_arg;
@@ -385,7 +387,7 @@ public class UI {
 
     protected static class Reinforcement_Phase_window extends UI_Window {
 
-        public void start_turn(){
+        void start_turn(){
             Button ok_button = get_button("ok");
             ok_button.addListener(new ChangeListener() {
                 @Override
