@@ -1,0 +1,36 @@
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+eclipse.project.name = appName + '-core'
+
+dependencies {
+  compile "com.badlogicgames.gdx:gdx:$gdxVersion"
+  compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+  compile "org.scala-lang:scala-library:$scalaVersion"
+  compile "com.badlogicgames.gdx:gdx-ai:$aiVersion"
+  compile "com.kotcrab.vis:vis-runtime:$visRuntimeVersion"
+  compile "net.onedaybeard.artemis:artemis-odb:$artemisOdbVersion"
+  compile "io.github.libktx:ktx-scene2d:$ktxScene2DVersion"
+  compile "io.github.libktx:ktx-inject:$ktxInjectVersion"
+  compile "com.github.czyzby:gdx-lml:$lmlVersion"
+  compile "com.github.czyzby:gdx-kiwi:$kiwiVersion"
+  compile "com.badlogicgames.ashley:ashley:$ashleyVersion"
+  compile "io.github.libktx:ktx-ashley:$ktxAshleyVersion"
+  compile "com.github.czyzby:noise4j:$noise4jVersion"
+  compile "com.github.czyzby:gdx-lml-vis:$lmlVisVersion"
+  compile "com.kotcrab.vis:vis-ui:$visUiVersion"
+  compile "io.github.libktx:ktx-log:$ktxLogVersion"
+  compile "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
+  compile "io.github.libktx:ktx-box2d:$ktxBox2dVersion"
+  compile "com.sudoplay.joise:joise:$joiseVersion"
+  compile "net.dermetfan.libgdx-utils:libgdx-utils:$utilsVersion"
+  compile "io.github.libktx:ktx-style:$ktxStyleVersion"
+  compile "io.github.libktx:ktx-i18n:$ktxI18nVersion"
+  compile "io.github.libktx:ktx-vis-style:$ktxVisStyleVersion"
+  compile "io.github.libktx:ktx-assets:$ktxAssetsVersion"
+  compile "io.github.libktx:ktx-app:$ktxAppVersion"
+  compile "io.github.libktx:ktx-collections:$ktxCollectionsVersion"
+  compile "io.github.libktx:ktx-actors:$ktxActorsVersion"
+  compile "io.github.libktx:ktx-math:$ktxMathVersion"
+  compile "io.github.libktx:ktx-vis:$ktxVisVersion"
+  compile "io.github.libktx:ktx-async:$ktxAsyncVersion"
+}
+        
