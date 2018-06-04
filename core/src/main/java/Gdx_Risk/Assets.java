@@ -1,8 +1,6 @@
 package Gdx_Risk;
 
-import Gdx_Risk.Map.Coord;
-import Gdx_Risk.Map.Prov;
-import Gdx_Risk.Map.Prov_Id;
+import Gdx_Risk.Map.*;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -13,7 +11,6 @@ import com.badlogic.gdx.graphics.g2d.PolygonSpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.github.czyzby.kiwi.util.tuple.immutable.Pair;
-import com.github.czyzby.kiwi.util.tuple.immutable.Triple;
 import com.github.czyzby.kiwi.util.tuple.mutable.MutablePair;
 
 import java.io.FileInputStream;
@@ -28,8 +25,8 @@ import java.util.List;
 
 public class Assets {
     static int hex_size;
-    static int halfhex;
-    static int quarthex;
+    static int half_hex;
+    static int quart_hex;
     static int scr_height;
     static int scr_width;
     static int hexes_per_column;
@@ -41,22 +38,22 @@ public class Assets {
     static float sea_color_float[];//background color
     static String[] libgdx_colors;
     static int no_provs;
-    static HashMap<Integer, Prov_Id[]> navtree;
+    static HashMap<Prov_Id, Prov_Id[]> navtree;
 
     static Prov_Lookup prov_lookup;
-    static private float[] hex_outline_vert_coords;
-    static private PolygonSprite sea_poly;
-    static private PolygonSpriteBatch polyBatch;
-    static private ShapeRenderer shape_renderer;
-    static private Color sea_hex_color;
-    static private String map_data_file_path;
-    static private PolygonSprite[] prov_sprite_array;
-    static private Pair<Coord, Integer>[] prov_edge_verts;
-    static private Pair<Pair<Object, Float>, Pair<Object, Float>>[] hex_outline_verts;
-    static private String[] prov_names;
+    static float[] hex_outline_vert_coords;
+    static PolygonSprite sea_poly;
+    static PolygonSpriteBatch polyBatch;
+    static ShapeRenderer shape_renderer;
+    static Color sea_hex_color;
+    static String map_data_file_path;
+    static PolygonSprite[] hex_sprite_array;
+    static Pair<Hex_Coord, Integer>[] prov_borders;
+    static Pair<Pair<Float, Float>, Pair<Float, Float>>[] hex_outline_lines;//todo do this with coords
+    static String[] prov_names;
 
-
-
+//todo fix navmap and and border thing also combine them, since they basically do the same thing
+//todo fix provid comparision
     static void load()  {
 
         class Loading{
@@ -95,23 +92,23 @@ public class Assets {
             }
             private void build_hex_outline_verts(){
                 //verts are stored like this Pair(Pair(x1,y1),Pair(x2,y2))
-                hex_outline_verts =new Pair[hex_outline_vert_coords.length/2];
+                hex_outline_lines =new Pair[hex_outline_vert_coords.length/2];
                 for (int i = 0; i < hex_outline_vert_coords.length/2; i++) {
 
-                    MutablePair<Object, Float> x1_y1;
-                    MutablePair<Object, Float> x2_y2;
+                    MutablePair<Float, Float> x1_y1;
+                    MutablePair<Float, Float> x2_y2;
                     int index =i*2;
                     if (i<5) {//to fix out of bounds exeption
 
-                        x1_y1 = new MutablePair<Object, Float>(hex_outline_vert_coords[index],hex_outline_vert_coords[index+1]);
-                        x2_y2 = new MutablePair<Object, Float>(hex_outline_vert_coords[index+2],hex_outline_vert_coords[index+3]);
+                        x1_y1 = new MutablePair<Float, Float>(hex_outline_vert_coords[index],hex_outline_vert_coords[index+1]);
+                        x2_y2 = new MutablePair<Float, Float>(hex_outline_vert_coords[index+2],hex_outline_vert_coords[index+3]);
                     }else {
-                        x1_y1 = new MutablePair<Object, Float>(hex_outline_vert_coords[index],hex_outline_vert_coords[index+1]);
-                        x2_y2 = new MutablePair<Object, Float>(hex_outline_vert_coords[0],hex_outline_vert_coords[1]);
+                        x1_y1 = new MutablePair<Float, Float>(hex_outline_vert_coords[index],hex_outline_vert_coords[index+1]);
+                        x2_y2 = new MutablePair<Float, Float>(hex_outline_vert_coords[0],hex_outline_vert_coords[1]);
                     }
 
-                    Pair<Pair<Object, Float>, Pair<Object, Float>> vert = new Pair<>(x1_y1.toImmutable(),x2_y2.toImmutable());
-                    hex_outline_verts[i]=vert;
+                    Pair<Pair<Float, Float>, Pair<Float, Float>> vert = new Pair<>(x1_y1.toImmutable(),x2_y2.toImmutable());
+                    hex_outline_lines[i]=vert;
                 }
             }
 
@@ -131,31 +128,8 @@ public class Assets {
         navtree=NavTree.build();
     }
 
-    class Prov_Lookup{
-        private int[][] prov_lookup;
 
-        Prov_Lookup(int[][] prov_lookup){
-            this.prov_lookup = prov_lookup;
-        }
 
-        Prov_Id resolve_prov_id(Coord coord){
-            //dumps coords if it's outside of the grid
-            System.out.println(coord);
-            if ( coord.getX()<0|| coord.getY()<0||
-                    !(coord.getX() < hexes_per_row)|| !(coord.getY() < hexes_per_column)){
-                return new Prov_Id(-1);
-            }else {
-                return new Prov_Id(prov_lookup[coord.getY()][coord.getX()]);
-            }
-        }
-
-        int get_y_len(){
-            return this.prov_lookup.length;
-        }
-        int get_x_len(){
-            return this.prov_lookup[0].length;
-        }
-    }
 
     static String get_prov_name(Prov_Id prov_id){
         return prov_names[prov_id.to_int()];
@@ -164,40 +138,27 @@ public class Assets {
     private static class NavTree{
         // builds a 2d array where each index is a prov id and contains the provs it's connected to
         // todo turn this into a hashmap
-        static Prov_Id[][]  build() {
+        static HashMap<Prov_Id, Prov_Id[]>  build() {
             //esch index matches a province id
             //each indexindex is a province it's connected to
-            int[][] nav_tree = new int[prov_sprite_array.length][];
-            ArrayList<Prov_Id> connected_provs = new ArrayList<>();
 
+            ArrayList<Prov_Id> connected_provs = new ArrayList<>();
+            HashMap<Prov_Id, Prov_Id[]> nav_tree = new HashMap<Prov_Id, Prov_Id[]>();
             // Searches each index in the prov_lookup and looks for neighbours bij comparing prov_ids
             //TODO? this could be a lot more efficient
             //TODO this method does not search the provences on the edge of the grid
-            for (int current_prov_id = 0; current_prov_id < prov_sprite_array.length; current_prov_id++) {
+            for (int current_prov_id = 0; current_prov_id < hex_sprite_array.length; current_prov_id++) {
                 for (int prov_x = 1; prov_x < prov_lookup.get_y_len() - 2; prov_x++) {
                     for (int prov_y = 1; prov_y < prov_lookup.get_x_len() - 2; prov_y++) {
-                        connected_provs = check_prov(new Coord(prov_x, prov_y), new Prov_Id(current_prov_id) ,connected_provs);
+                        connected_provs = check_prov(new Hex_Coord(prov_x, prov_y), new Prov_Id(current_prov_id) ,connected_provs);
                     }
                 }
-                nav_tree[current_prov_id] = Util.int_arraylist_to_array(connected_provs);
+                nav_tree.put(new Prov_Id(current_prov_id), connected_provs.toArray(new Prov_Id[0]));
                 connected_provs.clear();
             }
-
-            //for debugging
-            /*
-            int prov = 0;
-            for (int[] province:nav_tree) {
-                System.out.print("prov "+prov+": ");
-                for (int connection: province){
-                    System.out.print(connection+" ");
-                }
-                prov++;
-                System.out.print("\n");
-            }
-            System.out.print("\n");*/
             return nav_tree;
         }
-        private static ArrayList<Prov_Id> check_prov(Coord prov, Prov_Id currentprov, ArrayList<Prov_Id> connected_provs){
+        private static ArrayList<Prov_Id> check_prov(Hex_Coord prov, Prov_Id currentprov, ArrayList<Prov_Id> connected_provs){
             //currentprov is the prof it's checking the borders of
             //because the id for sea is -1 it should never come up
 
@@ -218,7 +179,7 @@ public class Assets {
 
             return connected_provs;
         }
-        private static ArrayList<Prov_Id> compare_provs(Coord prov, Prov_Id current_prov, ArrayList<Prov_Id> connected_provs){
+        private static ArrayList<Prov_Id> compare_provs(Hex_Coord prov, Prov_Id current_prov, ArrayList<Prov_Id> connected_provs){
             Prov_Id compare_prov_id = prov_lookup.resolve_prov_id(prov);
             if (compare_prov_id.to_int() != -1){
                 if (current_prov != compare_prov_id){
@@ -236,22 +197,21 @@ public class Assets {
         //TODO could be more efficient. draws a lot of lines twice.
         static void build(){
 
-            ArrayList<Pair<Coord, Integer>> prov_edge_verts_list = new ArrayList<>();
-            for (int prov_x = 0; prov_x < prov_lookup.length; prov_x++) {
-                for (int prov_y = 0; prov_y < prov_lookup[0].length; prov_y++) {
-                    check_prov(new Coord(prov_x,prov_y),prov_edge_verts_list);
+            ArrayList<Pair<Hex_Coord, Integer>> prov_edge_verts_list = new ArrayList<>();
+            for (int prov_y = 0; prov_y < prov_lookup.get_y_len(); prov_y++) {
+                for (int prov_x = 0; prov_x < prov_lookup.get_x_len(); prov_x++) {
+                    prov_edge_verts_list = check_prov(new Hex_Coord(prov_x, prov_y),prov_edge_verts_list);
                 }
             }
 
-            prov_edge_verts = prov_edge_verts_list.toArray(new Pair[0]);
+            prov_borders = prov_edge_verts_list.toArray(new Pair[0]);
         }
 
-        private static ArrayList<Pair<Coord, Integer>>
-                   check_prov(Coord c_prov,
-                   ArrayList<Pair<Coord, Integer>> prov_edge_verts_list){
-            //currentprov is the prof it's checking the borders of
+        private static ArrayList<Pair<Hex_Coord, Integer>>
+                   check_prov(Hex_Coord c_prov, ArrayList<Pair<Hex_Coord, Integer>> prov_edge_verts_list){
+            //currentprov is the prov it's checking the borders of
             //because the id for sea is -1 it should never come up
-            //vert_num is the hex vert index in hex_outline_verts
+            //vert_num is the hex vert index in hex_outline_lines
 
             prov_edge_verts_list = compare_provs(c_prov.transl_y(1), c_prov, prov_edge_verts_list, 4);
             prov_edge_verts_list = compare_provs(c_prov.transl_y(-1), c_prov, prov_edge_verts_list, 1);
@@ -271,24 +231,26 @@ public class Assets {
             return prov_edge_verts_list;
         }
 
-        private static ArrayList<Pair<Coord, Integer>> compare_provs(Coord prov, Coord currentprov
-                , ArrayList<Pair<Coord, Integer>> prov_edge_verts_list, int vert_num){
+        private static ArrayList<Pair<Hex_Coord, Integer>> compare_provs(Hex_Coord prov, Hex_Coord currentprov
+                , ArrayList<Pair<Hex_Coord, Integer>> prov_edge_verts_list, int vert_num){
+            if (prov_lookup.resolve_prov_id(currentprov).to_int()!=-1){
+                if (prov.getX()<0|| prov.getX()>prov_lookup.get_y_len()-1|| prov.getY()<0|| prov.getY()>prov_lookup.get_x_len()-1){
+                    //if the coordinate is outside of the hex grid and it it's not from a sea prov it automatically adds a line
 
-            if (prov.getX()<0|| prov.getX()>prov_lookup.length-1|| prov.getY()<0|| prov.getY()>prov_lookup[0].length-1){
-                //if the coordinate is outside of the hex grid and it it's not from a sea prov it automatically adds a line
-                if (prov_lookup.resolve_prov_id(currentprov).to_int()!=-1){
                     prov_edge_verts_list.add(new Pair<>(currentprov, vert_num));
-                }
-            }else{
-                
-                if (prov_lookup.resolve_prov_id(currentprov) != prov_lookup.resolve_prov_id(prov)){
-                    prov_edge_verts_list.add(new Pair<>(currentprov, vert_num));
+
+                }else{
+                    if (prov_lookup.resolve_prov_id(currentprov).id() != prov_lookup.resolve_prov_id(prov).id()){
+                        if (prov_lookup.resolve_prov_id(prov).to_int() == prov_lookup.resolve_prov_id(currentprov).to_int()){
+                            System.out.println("not working");
+                        }
+                        prov_edge_verts_list.add(new Pair<>(currentprov, vert_num));
+                    }
                 }
             }
             return prov_edge_verts_list;
         }
     }
-
 
 
     private static class Create_Hex_sprite{
@@ -315,16 +277,16 @@ public class Assets {
 
             float[] hex_polygon = new float[12];
             hex_polygon[0]= 0;
-            hex_polygon[1]=	halfhex;
-            hex_polygon[2]= quarthex;
+            hex_polygon[1]= half_hex;
+            hex_polygon[2]= quart_hex;
             hex_polygon[3]=	hex_size;
-            hex_polygon[4]= halfhex + quarthex;
+            hex_polygon[4]= half_hex + quart_hex;
             hex_polygon[5]= hex_size;
             hex_polygon[6]= hex_size;
-            hex_polygon[7]=	halfhex;
-            hex_polygon[8]= halfhex + quarthex;
+            hex_polygon[7]= half_hex;
+            hex_polygon[8]= half_hex + quart_hex;
             hex_polygon[9]=	0;
-            hex_polygon[10]= quarthex;
+            hex_polygon[10]= quart_hex;
             hex_polygon[11]= 0;
             return hex_polygon;
         }
@@ -343,6 +305,7 @@ public class Assets {
             shape_renderer.end();
         }
     }
+/*
 
     static class HexGrid {
         static boolean did_render = false;
@@ -350,8 +313,8 @@ public class Assets {
             //renders hexgrid
 
             if (!did_render){
-                int outline_origin_X = 0; //(scr_width % (halfhex+quarthex)) / 4;//TODO ofset set to 0 for debugging
-                int outline_origin_Y = scr_height-hex_size-halfhex-30; //((scr_height - halfhex) % (hexsize))/ 2;//why do i have to divide by 4?
+                int outline_origin_X = 0; //(scr_width % (half_hex+quart_hex)) / 4;//TODO ofset set to 0 for debugging
+                int outline_origin_Y = scr_height-hex_size-half_hex-30; //((scr_height - half_hex) % (hexsize))/ 2;//why do i have to divide by 4?
                 //-30 to make room for button bar
                 //Y asxis flipped to line up with mouse axis
 
@@ -360,17 +323,19 @@ public class Assets {
                 polyBatch.begin();
                 for(int i=0; i<hexes_per_row; i++){
                     if (i % 2 == 0)	{
-                        drawnhex_origin_Y += halfhex;
+                        drawnhex_origin_Y += half_hex;
                     }
                     for(int j=0; j<hexes_per_column; j++){
-                        if (prov_lookup[j][i] != -1) {//if it's sea
-                            PolygonSprite sprite = prov_sprite_array[Game.Data.who_owns(
-                                    new Prov_Id( prov_lookup[j][i]))];
+                        Prov_Id prov_owner = prov_lookup.resolve_prov_id(new Hex_Coord(i, j));
+                        if ( prov_owner.to_int() > -1) {//if it's sea
+                            PolygonSprite sprite = hex_sprite_array[
+                                    Game.Data.who_owns(prov_owner)
+                                    ];
                             draw_hex(sprite, outline_origin_X, drawnhex_origin_Y);
                         }
                         drawnhex_origin_Y = drawnhex_origin_Y -hex_size;
                     }
-                    outline_origin_X += halfhex+quarthex;
+                    outline_origin_X += half_hex+quart_hex;
                     drawnhex_origin_Y = outline_origin_Y;
                 }
                 polyBatch.end();
@@ -389,38 +354,41 @@ public class Assets {
         }
 
         private static void draw_borders(){
-            int hex_width = halfhex +quarthex;
+            int hex_width = half_hex +quart_hex;
             int hex_height = hex_size;
-            int y_offset = scr_height-hex_size-halfhex-30;
+            int y_offset = scr_height-hex_size-half_hex-30;
 
             shape_renderer.setAutoShapeType(true);
             shape_renderer.setColor(0f,0f,0f,1);
 
             shape_renderer.begin();
-            for (Triple line: prov_edge_verts){
-                float offset_x = (float) ((int)line.getFirst()*hex_width);
-                float offset_y = (float)(y_offset - (hex_height*(int)line.getSecond()));
-                if ((int)line.getFirst()%2==0){
-                    offset_y += halfhex;
+            for (Pair<Hex_Coord, Integer> line: prov_borders){
+                Hex_Coord hex_coord = line.getFirst();
+                float hex_bound_x = (float) (hex_coord.getX()*hex_width);
+                float hex_bound_y = (float)(y_offset - (hex_height*hex_coord.getY()));
+                if (hex_coord.getX()%2==0){
+                    hex_bound_y += half_hex;
                 }
 
-                Pair i = hex_outline_verts[(int)line.getThird()];
-                Pair j = (Pair)i.getFirst();
-                Pair k = (Pair)i.getSecond();
+                Pair<Pair<Float, Float>,Pair<Float, Float>> line_xy = hex_outline_lines[line.getSecond()];
 
-                float x1=(float)j.getFirst()+offset_x;
-                float y1 = (float)j.getSecond()+offset_y;
-                float x2 = (float)k.getFirst()+offset_x;
-                float y2 = (float)k.getSecond()+offset_y;
+                Pair<Float, Float> begin = line_xy.getFirst();
+                Pair<Float, Float> end = line_xy.getSecond();
+
+                float x1= begin.getFirst()+hex_bound_x;
+                float y1 = begin.getSecond()+hex_bound_y;
+                float x2 = end.getFirst()+hex_bound_x;
+                float y2 = end.getSecond()+hex_bound_y;
 
 
                 shape_renderer.line(x1,y1,x2,y2);
-                // this seems the be the frame hog
             }
+
             shape_renderer.end();
 
         }
     }
+*/
 
     public static class Util{
 
@@ -467,14 +435,15 @@ public class Assets {
             ArrayList<PolygonSprite> tmp_hex_sprite_array = parsed.getSecond();
 
             no_provs = tmp_hex_sprite_array.size();
-            prov_sprite_array = tmp_hex_sprite_array.toArray(new PolygonSprite[0]);
+            hex_sprite_array = tmp_hex_sprite_array.toArray(new PolygonSprite[0]);
 
 
             //converts 2d arraylist to array
-            prov_lookup = new int[tmp_prov_lookup_list.size()][tmp_prov_lookup_list.get(0).size()];
+            int[][] _prov_lookup = new int[tmp_prov_lookup_list.size()][tmp_prov_lookup_list.get(0).size()];
             for (int i = 0; i <tmp_prov_lookup_list.size() ; i++) {
-                prov_lookup[i]= Util.int_arraylist_to_array(tmp_prov_lookup_list.get(i));
+                _prov_lookup[i]= Util.int_arraylist_to_array(tmp_prov_lookup_list.get(i));
             }
+            prov_lookup = new Prov_Lookup(_prov_lookup, hexes_per_row, hexes_per_column);
         }
 
         private static Pair<ArrayList<ArrayList<Integer>>, ArrayList<PolygonSprite>>
@@ -544,12 +513,12 @@ public class Assets {
 
         private static void build_config_data (){
             //hexsize from io
-            halfhex = hex_size / 2;
-            quarthex = halfhex / 2;
+            half_hex = hex_size / 2;
+            quart_hex = half_hex / 2;
             scr_height = Gdx.graphics.getHeight();
             scr_width = Gdx.graphics.getWidth();
-            hexes_per_column = ((scr_height - halfhex)-30 )/ (hex_size);
-            hexes_per_row = scr_width/ (halfhex+quarthex);
+            hexes_per_column = ((scr_height - half_hex)-30 )/ (hex_size);
+            hexes_per_row = scr_width/ (half_hex + quart_hex);
         }
     }
 

@@ -1,5 +1,6 @@
 package Gdx_Risk;
 
+import Gdx_Risk.Map.Prov;
 import Gdx_Risk.Map.Prov_Id;
 import com.github.czyzby.kiwi.util.tuple.immutable.Pair;
 import com.github.czyzby.kiwi.util.tuple.mutable.MutablePair;
@@ -7,6 +8,7 @@ import com.github.czyzby.kiwi.util.tuple.mutable.MutablePair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 
 import static com.badlogic.gdx.math.MathUtils.random;
 
@@ -24,15 +26,17 @@ class Game {
         static Prov_Data[] prov_data;
 
         static int who_owns(Prov_Id prov_id) {
-            int i = -1;
+            int idx = -2;
             for (Player_Data player_data : player_data) {
                 if (player_data.owned_provs.contains(prov_id)) {
-                    i = player_data.player_id;
+                    idx = player_data.player_id;
                     break;
                 }
             }
-            assert i != -1 || prov_id.to_int() == -1;
-            return i;
+/*            if ( idx > -1 || prov_id.to_int() == -1){//todo
+                throw new NullPointerException();
+            }*/
+            return 2;
         }
 
         static void transfer_prov_conquest(Prov_Id prov_id, int new_owner_id, int new_armies_num) {
@@ -119,8 +123,8 @@ class Game {
             }
         }
 
-        static boolean is_connected(int prov_id1, int prov_id2) {
-            for (int connection : prov_data[prov_id1].connnections) {
+        static boolean is_connected(Prov_Id prov_id1, Prov_Id prov_id2) {
+            for (Prov_Id connection : prov_data[prov_id1.to_int()].connnections) {
                 if (connection == prov_id2) {
                     return true;
                 }
@@ -226,10 +230,10 @@ class Game {
             }
             //generates province data without armies
             prov_data = new Prov_Data[Assets.no_provs];
-            int[][] navtree = Assets.navtree;
+            HashMap<Prov_Id, Prov_Id[]> navtree = Assets.navtree;
 
             for (int i = 0; i < prov_data.length; i++) {
-                prov_data[i] = new Prov_Data(i, navtree[i]);
+                prov_data[i] = new Prov_Data(new Prov_Id(i), navtree.get(new Prov_Id(i)));
 
             }
         }
@@ -251,17 +255,17 @@ class Game {
         }
 
         private static class Prov_Data {
-            int prov_id;
+            Prov_Id prov_id;
             int no_armies;
-            int[] connnections;
+            Prov_Id[] connnections;
 
-            Prov_Data(int prov_id_arg, int[] connnections_arg) {
+            Prov_Data(Prov_Id prov_id_arg, Prov_Id[] connnections_arg) {
                 prov_id = prov_id_arg;
                 connnections = connnections_arg;
                 no_armies = 0;
             }
 
-            public Prov_Data(int prov_id_arg, int no_armies_arg, int[] connnections_arg) {
+            public Prov_Data(Prov_Id prov_id_arg, int no_armies_arg, Prov_Id[] connnections_arg) {
                 prov_id = prov_id_arg;
                 no_armies = no_armies_arg;
                 connnections = connnections_arg;

@@ -1,13 +1,12 @@
 package Gdx_Risk;
 
-import Gdx_Risk.Map.Coord;
+import Gdx_Risk.Map.Hex_Coord;
 import Gdx_Risk.Map.Prov_Id;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.GL20;
-import com.github.czyzby.kiwi.util.tuple.immutable.Pair;
 import com.badlogic.gdx.Input.Keys;
 
 public class Risk_Main extends ApplicationAdapter {
@@ -29,13 +28,15 @@ public class Risk_Main extends ApplicationAdapter {
 //TODO increase resolution to 720p
 //TODO improve visuals
 
+    private Render renderer;
+
     @Override
     public void create(){
         Assets.load();
         Game.load_gamedata();
+        renderer = new Render();
         //sets background
         Gdx.gl.glClearColor(Assets.sea_color_float[0], Assets.sea_color_float[1], Assets.sea_color_float[2], Assets.sea_color_float[3]);
-
         UI.init_UI();
         MyInputProcessor inputProcessor = new MyInputProcessor();
         InputMultiplexer multiplexer = new InputMultiplexer(UI.stage,inputProcessor);
@@ -46,7 +47,7 @@ public class Risk_Main extends ApplicationAdapter {
     public void render () {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        Assets.HexGrid.render();
+        renderer.render();
         Assets.render_infobar_background();
 
         UI.info_bar.update_dialog_timer(Gdx.graphics.getDeltaTime());
@@ -82,40 +83,40 @@ public class Risk_Main extends ApplicationAdapter {
                 return true;
             }
 
-            Coord clicked_hex = resolve_hex(screenX,screenY);
+            Hex_Coord clicked_hex = resolve_hex(screenX,screenY);
 
             mouse_move_handeler(Assets.prov_lookup.resolve_prov_id(clicked_hex), screenX, screenY);
             return true;
         }
 
-        private Coord resolve_hex(int screenX,int screenY){
+        private Hex_Coord resolve_hex(int screenX, int screenY){
             //resolves the hex coordinates from mouse coordinates
 
 
-            int grid_offsetX = 0; //(scr_width % (halfhex+quarthex)) / 4;//TODO ofset set to 0 for debugging
-            int grid_offsetY = 30; //((scr_height - halfhex) % (hexsize))/ 2;//why do i have to divide by 4?
+            int grid_offsetX = 0; //(scr_width % (half_hex+quart_hex)) / 4;//TODO ofset set to 0 for debugging
+            int grid_offsetY = 30; //((scr_height - half_hex) % (hexsize))/ 2;//why do i have to divide by 4?
 
             screenX = screenX - grid_offsetX;
-            screenY = screenY - grid_offsetY; //first resolve column then row. if column is even then -halfhex
+            screenY = screenY - grid_offsetY; //first resolve column then row. if column is even then -half_hex
 
-            Double tmp1 = (double) (screenX / Assets.quarthex);
+            Double tmp1 = (double) (screenX / Assets.quart_hex);
             int quarthex_X = tmp1.intValue();
             int hex_grid_X = quarthex_X / 3;//used both as final result and as full_hex_x
 
-            Double tmp2 = (double) (screenY / Assets.halfhex + 0.5f);
+            Double tmp2 = (double) (screenY / Assets.half_hex + 0.5f);
             int halfhex_Y = tmp2.intValue();
             int hex_grid_Y = halfhex_Y / 2;
 
             int X_remain;
             int Y_remain;
             if (quarthex_X > 0)	{// to prevent divison / 0
-                X_remain = screenX % (quarthex_X*Assets.quarthex);
+                X_remain = screenX % (quarthex_X*Assets.quart_hex);
             } else	{
                 X_remain = screenX;
             }
 
             if (halfhex_Y > 0)	{// to prevent divison / 0
-                Y_remain = screenY % (halfhex_Y*Assets.halfhex);
+                Y_remain = screenY % (halfhex_Y*Assets.half_hex);
             } else	{
                 Y_remain = screenY;
             }
@@ -126,7 +127,7 @@ public class Risk_Main extends ApplicationAdapter {
             if (quarthex_X % 3 > 0)	{//if it is in a straight collumn
                 X_offset = 0;
             } else	{
-                X_offset = X_grid_offset_calc(X_remain, Y_remain, halfhex_Y, hex_grid_X, Assets.quarthex);
+                X_offset = X_grid_offset_calc(X_remain, Y_remain, halfhex_Y, hex_grid_X, Assets.quart_hex);
             }
 
             // calculates y offset
@@ -138,7 +139,7 @@ public class Risk_Main extends ApplicationAdapter {
                         Y_offset = -1;
                     }
                 } else {
-                    Y_offset = Y_grid_offset_calc (X_remain, Y_remain, hex_grid_X, Assets.quarthex);
+                    Y_offset = Y_grid_offset_calc (X_remain, Y_remain, hex_grid_X, Assets.quart_hex);
                 }
             } else	{
                 Y_offset = 0;
@@ -146,7 +147,7 @@ public class Risk_Main extends ApplicationAdapter {
             hex_grid_Y = hex_grid_Y + Y_offset;
             hex_grid_X = hex_grid_X + X_offset;
 
-            return new Coord(hex_grid_X, hex_grid_Y);
+            return new Hex_Coord(hex_grid_X, hex_grid_Y);
         }
         private int Y_grid_offset_calc (int X_remain, int Y_remain, int fullhex_X, int quarthex)		{
             int Y_offset;
@@ -217,7 +218,7 @@ public class Risk_Main extends ApplicationAdapter {
                 return true;
             }
 
-            Coord clicked_hex = resolve_hex(screenX,screenY);
+            Hex_Coord clicked_hex = resolve_hex(screenX,screenY);
 
             mouse_move_handeler(Assets.prov_lookup.resolve_prov_id(clicked_hex), screenX, screenY);
             return true;
@@ -242,7 +243,7 @@ public class Risk_Main extends ApplicationAdapter {
         if (clicked_prov_id.to_int() != -1){
             if (clicked_prov_id!=Game.selected_prov
                     &&Game.Data.who_owns(clicked_prov_id)!=Game.active_player
-                    &&Game.Data.is_connected(clicked_prov_id.to_int(), Game.selected_prov.to_int())){//if attack is possible
+                    &&Game.Data.is_connected(clicked_prov_id, Game.selected_prov)){//if attack is possible
                 UI.call_confirm_attack_window(Game.selected_prov, clicked_prov_id);
             }
             if (Game.Data.who_owns(clicked_prov_id)== Game.active_player){
