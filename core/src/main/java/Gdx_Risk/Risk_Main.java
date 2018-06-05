@@ -8,6 +8,9 @@ import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.Input.Keys;
+import Gdx_Risk.Assets.*;
+
+import static Gdx_Risk.Assets.*;
 
 public class Risk_Main extends ApplicationAdapter {
 
@@ -28,15 +31,15 @@ public class Risk_Main extends ApplicationAdapter {
 //TODO increase resolution to 720p
 //TODO improve visuals
 
-    private Render renderer;
+
 
     @Override
     public void create(){
-        Assets.load();
+        load();
         Game.load_gamedata();
-        renderer = new Render();
+
         //sets background
-        Gdx.gl.glClearColor(Assets.sea_color_float[0], Assets.sea_color_float[1], Assets.sea_color_float[2], Assets.sea_color_float[3]);
+        Gdx.gl.glClearColor(sea_color_float[0], sea_color_float[1], sea_color_float[2], sea_color_float[3]);
         UI.init_UI();
         MyInputProcessor inputProcessor = new MyInputProcessor();
         InputMultiplexer multiplexer = new InputMultiplexer(UI.stage,inputProcessor);
@@ -47,8 +50,8 @@ public class Risk_Main extends ApplicationAdapter {
     public void render () {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        renderer.render();
-        Assets.render_infobar_background();
+        renderer.render(map_model.temp_get_render_hexes());
+        render_infobar_background();
 
         UI.info_bar.update_dialog_timer(Gdx.graphics.getDeltaTime());
         //System.out.println(Gdx.graphics.getFramesPerSecond());
@@ -84,8 +87,9 @@ public class Risk_Main extends ApplicationAdapter {
             }
 
             Hex_Coord clicked_hex = resolve_hex(screenX,screenY);
+            System.out.println(clicked_hex);
 
-            mouse_move_handeler(Assets.prov_lookup.resolve_prov_id(clicked_hex), screenX, screenY);
+            mouse_move_handeler(map_model.getCrd_to_prv().get_prov_id(clicked_hex), screenX, screenY);
             return true;
         }
 
@@ -99,24 +103,24 @@ public class Risk_Main extends ApplicationAdapter {
             screenX = screenX - grid_offsetX;
             screenY = screenY - grid_offsetY; //first resolve column then row. if column is even then -half_hex
 
-            Double tmp1 = (double) (screenX / Assets.quart_hex);
+            Double tmp1 = (double) (screenX / quart_hex);
             int quarthex_X = tmp1.intValue();
             int hex_grid_X = quarthex_X / 3;//used both as final result and as full_hex_x
 
-            Double tmp2 = (double) (screenY / Assets.half_hex + 0.5f);
+            Double tmp2 = (double) (screenY / half_hex + 0.5f);
             int halfhex_Y = tmp2.intValue();
             int hex_grid_Y = halfhex_Y / 2;
 
             int X_remain;
             int Y_remain;
             if (quarthex_X > 0)	{// to prevent divison / 0
-                X_remain = screenX % (quarthex_X*Assets.quart_hex);
+                X_remain = screenX % (quarthex_X*quart_hex);
             } else	{
                 X_remain = screenX;
             }
 
             if (halfhex_Y > 0)	{// to prevent divison / 0
-                Y_remain = screenY % (halfhex_Y*Assets.half_hex);
+                Y_remain = screenY % (halfhex_Y*half_hex);
             } else	{
                 Y_remain = screenY;
             }
@@ -127,7 +131,7 @@ public class Risk_Main extends ApplicationAdapter {
             if (quarthex_X % 3 > 0)	{//if it is in a straight collumn
                 X_offset = 0;
             } else	{
-                X_offset = X_grid_offset_calc(X_remain, Y_remain, halfhex_Y, hex_grid_X, Assets.quart_hex);
+                X_offset = X_grid_offset_calc(X_remain, Y_remain, halfhex_Y, hex_grid_X, quart_hex);
             }
 
             // calculates y offset
@@ -139,7 +143,7 @@ public class Risk_Main extends ApplicationAdapter {
                         Y_offset = -1;
                     }
                 } else {
-                    Y_offset = Y_grid_offset_calc (X_remain, Y_remain, hex_grid_X, Assets.quart_hex);
+                    Y_offset = Y_grid_offset_calc (X_remain, Y_remain, hex_grid_X, quart_hex);
                 }
             } else	{
                 Y_offset = 0;
@@ -220,7 +224,7 @@ public class Risk_Main extends ApplicationAdapter {
 
             Hex_Coord clicked_hex = resolve_hex(screenX,screenY);
 
-            mouse_move_handeler(Assets.prov_lookup.resolve_prov_id(clicked_hex), screenX, screenY);
+            mouse_move_handeler(map_model.getCrd_to_prv().get_prov_id(clicked_hex), screenX, screenY);
             return true;
         }
 
@@ -231,16 +235,16 @@ public class Risk_Main extends ApplicationAdapter {
     }
 
     private void mouse_move_handeler(Prov_Id clicked_prov_id, int screenX, int screenY) {
-        if (clicked_prov_id.to_int() != -1){
+/*        if (clicked_prov_id.to_int() != -1){
             UI.prov_info.setVisible(true);
             UI.set_prov_tooltip(clicked_prov_id,screenX,screenY);
         }else {
             UI.prov_info.setVisible(false);
-        }
+        }*/
     }
 
     private void mouse_click_handeler(Prov_Id clicked_prov_id){ //, int screen_x, int screen_y // not used
-        if (clicked_prov_id.to_int() != -1){
+/*        if (clicked_prov_id.to_int() != -1){
             if (clicked_prov_id!=Game.selected_prov
                     &&Game.Data.who_owns(clicked_prov_id)!=Game.active_player
                     &&Game.Data.is_connected(clicked_prov_id, Game.selected_prov)){//if attack is possible
@@ -248,18 +252,11 @@ public class Risk_Main extends ApplicationAdapter {
             }
             if (Game.Data.who_owns(clicked_prov_id)== Game.active_player){
                 Game.selected_prov = clicked_prov_id;
-                System.out.print("the selected prov is "+Assets.get_prov_name(Game.selected_prov)+"\n");
+                System.out.print("the selected prov is "+get_prov_name(Game.selected_prov)+"\n");
             }
 
+        }*/
 
-            //for debugging
-            //System.out.print("selected prov: "+Game.selected_prov +"\n");
-            //System.out.print("active player: "+Game.active_player+"\n\n");
-        }
-
-        //for debuging
-			/*		System.out.print("prov id: "+Assets.prov_lookup[hex_grid_X][hex_grid_Y]+"\n");
-					System.out.print("x,y: "+hex_grid_X+" "+hex_grid_Y+"\n\n");*/
 
     }
 }

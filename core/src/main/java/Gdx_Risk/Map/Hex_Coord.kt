@@ -13,7 +13,7 @@ abstract class Abs_Coord(val x: Int, val y: Int) {
     }
 
     override fun toString(): String {
-        return "x: $x y: $y"
+        return "x:$x y:$y"
     }
 
     override fun equals(other: Any?): Boolean {

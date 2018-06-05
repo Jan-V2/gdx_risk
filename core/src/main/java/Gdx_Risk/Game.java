@@ -17,7 +17,7 @@ class Game {
     static Prov_Id selected_prov = new Prov_Id(0);
 
     static void load_gamedata() {
-        Data.init_test_gamedata();
+        //Data.init_test_gamedata();
     }
 
     static class Data {
@@ -230,10 +230,10 @@ class Game {
             }
             //generates province data without armies
             prov_data = new Prov_Data[Assets.no_provs];
-            HashMap<Prov_Id, Prov_Id[]> navtree = Assets.navtree;
+           // HashMap<Prov_Id, Prov_Id[]> navtree = Assets.navtree;
 
             for (int i = 0; i < prov_data.length; i++) {
-                prov_data[i] = new Prov_Data(new Prov_Id(i), navtree.get(new Prov_Id(i)));
+              //  prov_data[i] = new Prov_Data(new Prov_Id(i), navtree.get(new Prov_Id(i)));
 
             }
         }

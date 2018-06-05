@@ -21,10 +21,4 @@ public class Prov_Lookup{
         }
     }
 
-    public int get_y_len(){
-        return this.prov_lookup.length;
-    }
-    public int get_x_len(){
-        return this.prov_lookup[0].length;
-    }
 }

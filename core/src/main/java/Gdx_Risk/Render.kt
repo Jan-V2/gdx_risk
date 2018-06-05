@@ -3,7 +3,6 @@ package Gdx_Risk
 import Gdx_Risk.Assets.*
 import Gdx_Risk.Map.Hex_Coord
 import Gdx_Risk.Map.Screen_Coord
-import com.badlogic.gdx.graphics.g2d.PolygonSprite
 
 class Render() {
 
@@ -12,13 +11,13 @@ class Render() {
     }
 
     fun render(hexes: Array<Render_Hex>) {
-        //-30 to make room for button bar
-        var outline_origin_X = 0 //TODO set to 0 for debugging
-        val outline_origin_Y = scr_height - hex_size - half_hex - 30
-
-        var render_field_origin = Screen_Coord(0, 30)//TODO x set to 0 for debugging
+        // draws the y axis bot to top so it matches the coord map
+        val render_field_origin = Screen_Coord(0, scr_height - hex_size - half_hex - 30)//-30 to make room for button bar
 
         val hex_width = half_hex + quart_hex //todo refactor out?
+
+        shape_renderer.setAutoShapeType(true)
+        shape_renderer.setColor(0f,0f,0f,1f)
 
         shape_renderer.begin()
         polyBatch.begin()
@@ -27,7 +26,7 @@ class Render() {
             var hex_origin = render_field_origin
             hex_origin = hex_origin.transl(
                     it.hex_coord.x * hex_width,
-                    it.hex_coord.y * hex_size
+                    -(it.hex_coord.y * hex_size)
             )
             if (it.hex_coord.x % 2 == 0){
                 hex_origin = hex_origin.transl_y(half_hex)
@@ -37,12 +36,13 @@ class Render() {
             sprite.draw(polyBatch)
 
             if (it.has_borders){
-                it.borders!!.forEach {
+                it.borderSegments!!.forEach {
+                    val coords = it.get_line()
                     shape_renderer.line(
-                            hex_origin.x.toFloat() + it.line_start.x,
-                            hex_origin.y.toFloat() + it.line_start.y,
-                            hex_origin.x.toFloat() + it.line_end.x,
-                            hex_origin.y.toFloat()+ it.line_end.y
+                            hex_origin.x.toFloat() + coords.first.x,
+                            hex_origin.y.toFloat() + coords.first.y,
+                            hex_origin.x.toFloat() + coords.second.x,
+                            hex_origin.y.toFloat()+ coords.second.y
                     )
                 }
             }
@@ -59,16 +59,43 @@ class Render() {
         private var _has_borders = false
         val has_borders: Boolean get() = _has_borders
 
-        private var _borders: Array<Hex_Border>? = null
-        val borders : Array<Hex_Border>? get() = _borders
+        private var _borderSegments: Array<Hex_Border_Segment>? = null
+        val borderSegments : Array<Hex_Border_Segment>? get() = _borderSegments
 
-        constructor(hexCoord: Hex_Coord, sprite: Sprite_Idx, borders: Array<Hex_Border>):this(hexCoord, sprite){
-            this._borders = borders
+        constructor(hexCoord: Hex_Coord, sprite: Sprite_Idx, borderSegments: Array<Hex_Border_Segment>):this(hexCoord, sprite){
+            this._borderSegments = borderSegments
             this._has_borders = true
         }
 
     }
-    data class Hex_Border(val line_start: Screen_Coord, val line_end: Screen_Coord)
+    data class Hex_Border_Segment(val line_number:Int){
+        fun get_line():Pair<Screen_Coord, Screen_Coord>{
+            val idx = line_number * 2
+            return if (line_number < 5){
+                Pair(
+                        Screen_Coord(
+                                hex_outline_points[idx],
+                                hex_outline_points[idx+1]
+                        ),
+                        Screen_Coord(
+                                hex_outline_points[idx+2],
+                                hex_outline_points[idx+3]
+                        )
+                )
+            }else{
+                Pair(
+                        Screen_Coord(
+                                hex_outline_points[idx],
+                                hex_outline_points[idx+1]
+                        ),
+                        Screen_Coord(
+                                hex_outline_points[0],
+                                hex_outline_points[1]
+                        )
+                )
+            }
+        }
+    }
     data class Sprite_Idx(val idx:Int)
 
 }
