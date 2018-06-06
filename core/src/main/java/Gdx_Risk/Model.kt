@@ -5,37 +5,27 @@ import Gdx_Risk.Map.Prov_Id
 import Gdx_Risk.Map.Screen_Coord
 import Gdx_Risk.Render.*
 import Gdx_Risk.Assets.*
-//add hex_coord -> prov map
-//add prov -> player
-//add player -> provs
-//add dicerolls
-//add get renderable hexes
 
 
-class Map_Model(prov_lookup: Array<Array<Int>>) {
+//later on
+//add some sort of flashing animationi
+//prov -> hexes could just do this the stupid way
+
+class Model(prov_lookup: Array<Array<Int>>) {
+    public val crd_to_prv = Coord_To_Prov(prov_lookup)
+    init {
+        Nav_Tree()
+    }
     constructor(prov_lookup: Array<IntArray>) : this(
             prov_lookup.map {
                 it.map { it }.toTypedArray()
             }.toTypedArray()
     )
 
-
-    public val crd_to_prv = Coord_To_Prov(prov_lookup)
-    init{
-
-    }
-
-    inner class Map(){
-        init {
-
-        }
-
-    }
-
-    fun temp_get_render_hexes(): Array<Render_Hex>{
-
+    fun get_render_hexes(): Array<Render_Hex>{
         fun get_borders(coord: Hex_Coord):Array<Hex_Border_Segment>{
             fun get_line_num(_i: Int): Int{
+                // DON'T TOUCH THE MAGIC NUMBERS.
                 val magic_vert_numbers = Pair(
                         //magic numbers that represent line along the edge of the hexes
                         arrayOf(3,5,4,1,2,0),
@@ -64,7 +54,6 @@ class Map_Model(prov_lookup: Array<Array<Int>>) {
             }
             return ret.toTypedArray()
         }
-
         val ret  =  arrayListOf<Render_Hex>()
         crd_to_prv.get_all_coords()
                 .filter { crd_to_prv.get_prov_id(it).id() != -1 }.forEach {
@@ -78,14 +67,14 @@ class Map_Model(prov_lookup: Array<Array<Int>>) {
                                     Render_Hex(it, Sprite_Idx(crd_to_prv.get_prov_id(it).id()),borders)
                             )
                         }
-
                 }
         return ret.toTypedArray()
     }
 
-    private inner class Nav_Tree{
-        val tree = HashMap<Prov_Id,ArrayList<Prov_Id>>()
-        init {
+    private inner class Nav_Tree  {
+        //maps provinces to neighbours
+        private val tree = HashMap<Prov_Id,ArrayList<Prov_Id>>()
+        init{
             fun add( from: Prov_Id, to: Prov_Id){
                 val from_tree = tree[from]
                 if (from_tree != null){
@@ -97,7 +86,6 @@ class Map_Model(prov_lookup: Array<Array<Int>>) {
                     tree[from] = arrayListOf(to)
                 }
             }
-
             crd_to_prv.get_all_coords().forEach {
                 val id_old = crd_to_prv.get_prov_id(it)
                 if( id_old.id() != -1){
@@ -112,6 +100,14 @@ class Map_Model(prov_lookup: Array<Array<Int>>) {
             }
         }
 
+        fun get_neighbourghs(prov_Id: Prov_Id):Array<Prov_Id>{
+            val ret = tree[prov_Id]
+            return if (ret == null){
+                arrayOf()
+            }else{
+                return ret.toTypedArray()
+            }
+        }
     }
 
     class Coord_To_Prov(private val prov_lookup: Array<Array<Int>>){
@@ -172,13 +168,14 @@ class Map_Model(prov_lookup: Array<Array<Int>>) {
         }
     }
 
+    class Game_state(){
+        //add prov -> player
+        // add player -> provs
+        // add armies -> provs
+        // add turn state
+        // add victory condition(s)
+        // add player elimination
+        // add combat
 
-
-
-    private data class Prov(val sprite_Idx: Sprite_Idx, val hex_coords: Array<Hex_Coord>){
-        fun get_new_different_sprite(sprite_Idx: Sprite_Idx): Prov{
-            return Prov(sprite_Idx, hex_coords)
-        }
     }
-
 }

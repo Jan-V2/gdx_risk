@@ -1,23 +1,19 @@
 package Gdx_Risk;
 
-import Gdx_Risk.Map.Hex_Coord;
 import Gdx_Risk.Map.Prov_Id;
-import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
-import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.Input.Keys;
-import Gdx_Risk.Assets.*;
+import com.github.czyzby.lml.parser.LmlParser;
+import com.github.czyzby.lml.util.LmlApplicationListener;
+import com.github.czyzby.lml.vis.util.VisLml;
 
 import static Gdx_Risk.Assets.*;
 
-public class Risk_Main extends ApplicationAdapter {
+public class Risk_Main extends LmlApplicationListener {
 
 //TODO put all the todos into a .todo file
 //TODO make the menu bar a real menu bar
-//TODO rotate provlookup
-//TODO put provlookup in map object
 
 //TODO figure out game screens
 //TODO add continents
@@ -32,209 +28,45 @@ public class Risk_Main extends ApplicationAdapter {
 //TODO improve visuals
 
 
-
     @Override
     public void create(){
+        super.create();
         load();
-        Game.load_gamedata();
+        setView(FirstView.class);
+
 
         //sets background
         Gdx.gl.glClearColor(sea_color_float[0], sea_color_float[1], sea_color_float[2], sea_color_float[3]);
-        UI.init_UI();
-        MyInputProcessor inputProcessor = new MyInputProcessor();
-        InputMultiplexer multiplexer = new InputMultiplexer(UI.stage,inputProcessor);
-        Gdx.input.setInputProcessor(multiplexer);
+        //UI.init_UI();
+        //Hex_Intput_Processor inputProcessor = new Hex_Intput_Processor(this);
+        //InputMultiplexer multiplexer = new InputMultiplexer(getCurrentView().getStage(), inputProcessor);
+        Gdx.input.setInputProcessor(getCurrentView().getStage());
+
+    }
+
+    @Override
+    protected LmlParser createParser() {
+        return VisLml.parser().build();
     }
 
     @Override
     public void render () {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        renderer.render(map_model.temp_get_render_hexes());
+        renderer.render(model.get_render_hexes());
         render_infobar_background();
+        getCurrentView().render();
 
+/*
         UI.info_bar.update_dialog_timer(Gdx.graphics.getDeltaTime());
         //System.out.println(Gdx.graphics.getFramesPerSecond());
         UI.stage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 60f));
         UI.stage.draw();
+*/
 
     }
 
-    public class MyInputProcessor implements InputProcessor {
-
-        @Override
-        public boolean keyDown(int keycode) {
-            //System.out.println(keycode);
-            if (keycode == Keys.ENTER){
-                Game.State.Turn_State.advance_turn_state();
-            }
-            return true;
-        }
-        @Override
-        public boolean keyUp(int keycode) {
-            return false;
-        }
-        @Override
-        public boolean keyTyped(char character) {
-            return false;
-        }
-
-        @Override
-        public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-            //to filter out negative numbers
-            if (screenX < 0 || screenY-30 < 0){
-                return true;
-            }
-
-            Hex_Coord clicked_hex = resolve_hex(screenX,screenY);
-            System.out.println(clicked_hex);
-
-            mouse_move_handeler(map_model.getCrd_to_prv().get_prov_id(clicked_hex), screenX, screenY);
-            return true;
-        }
-
-        private Hex_Coord resolve_hex(int screenX, int screenY){
-            //resolves the hex coordinates from mouse coordinates
-
-
-            int grid_offsetX = 0; //(scr_width % (half_hex+quart_hex)) / 4;//TODO ofset set to 0 for debugging
-            int grid_offsetY = 30; //((scr_height - half_hex) % (hexsize))/ 2;//why do i have to divide by 4?
-
-            screenX = screenX - grid_offsetX;
-            screenY = screenY - grid_offsetY; //first resolve column then row. if column is even then -half_hex
-
-            Double tmp1 = (double) (screenX / quart_hex);
-            int quarthex_X = tmp1.intValue();
-            int hex_grid_X = quarthex_X / 3;//used both as final result and as full_hex_x
-
-            Double tmp2 = (double) (screenY / half_hex + 0.5f);
-            int halfhex_Y = tmp2.intValue();
-            int hex_grid_Y = halfhex_Y / 2;
-
-            int X_remain;
-            int Y_remain;
-            if (quarthex_X > 0)	{// to prevent divison / 0
-                X_remain = screenX % (quarthex_X*quart_hex);
-            } else	{
-                X_remain = screenX;
-            }
-
-            if (halfhex_Y > 0)	{// to prevent divison / 0
-                Y_remain = screenY % (halfhex_Y*half_hex);
-            } else	{
-                Y_remain = screenY;
-            }
-
-            int X_offset;
-            int Y_offset;
-            //calculates x offset
-            if (quarthex_X % 3 > 0)	{//if it is in a straight collumn
-                X_offset = 0;
-            } else	{
-                X_offset = X_grid_offset_calc(X_remain, Y_remain, halfhex_Y, hex_grid_X, quart_hex);
-            }
-
-            // calculates y offset
-            if (halfhex_Y % 2 == 0)	{ //not sure what this line does, but it was in the origanal code.
-                if (quarthex_X % 3 > 0)	{//if it's in a square row
-                    if (hex_grid_X % 2 == 0)	{
-                        Y_offset = 0;
-                    } else	{
-                        Y_offset = -1;
-                    }
-                } else {
-                    Y_offset = Y_grid_offset_calc (X_remain, Y_remain, hex_grid_X, quart_hex);
-                }
-            } else	{
-                Y_offset = 0;
-            }
-            hex_grid_Y = hex_grid_Y + Y_offset;
-            hex_grid_X = hex_grid_X + X_offset;
-
-            return new Hex_Coord(hex_grid_X, hex_grid_Y);
-        }
-        private int Y_grid_offset_calc (int X_remain, int Y_remain, int fullhex_X, int quarthex)		{
-            int Y_offset;
-            if (fullhex_X % 2 == 0)		{//even
-                Y_offset = resolve_botL_topR(X_remain, Y_remain, quarthex);
-            } else	{
-                Y_offset = resolve_topL_BotR (X_remain, Y_remain);
-                if (Y_offset == 0)	{//because the method returns the wrong offset but only at this point
-                    Y_offset = -1;
-                } else	{
-                    Y_offset = 0;
-                }
-            }
-            return Y_offset;
-        }
-        private int X_grid_offset_calc (int X_remain, int Y_remain, int halfhex_Y, int fullhex_X, int quarthex)	{
-            int X_offset;
-            if (fullhex_X % 2 == 0)	{//even
-                if (halfhex_Y % 2 == 0)	{
-                    X_offset = resolve_botL_topR(X_remain, Y_remain, quarthex);
-                } else	{
-                    X_offset = resolve_topL_BotR (X_remain, Y_remain);
-                }
-            } else	{//uneven
-                if (halfhex_Y % 2 ==0) {
-                    X_offset = resolve_topL_BotR (X_remain, Y_remain);
-
-                } else	{
-                    X_offset = resolve_botL_topR(X_remain, Y_remain, quarthex);
-
-                }
-            }
-            return X_offset;
-        }
-        private int resolve_topL_BotR(int X_remain, int Y_remain)	{
-            int offset;
-            if (X_remain > Y_remain /2 )	{//if it's on the right
-                offset = 0;
-            } else	{
-                offset = -1;
-            }
-            return offset;
-        }
-        private int resolve_botL_topR (int X_remain, int Y_remain, int quarthex)	{
-            int offset;
-            if (quarthex - X_remain > Y_remain /2)	{//if it's on the left
-                offset = -1;
-            } else	{
-                offset = 0;
-            }
-            return offset;
-        }
-
-
-
-        @Override
-        public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-            return true;
-        }
-        @Override
-        public boolean touchDragged(int screenX, int screenY, int pointer) {
-            return false;
-        }
-        @Override
-        public boolean mouseMoved(int screenX, int screenY) {
-            //to filter out negative numbers
-            if (screenX < 0 || screenY-30 < 0){
-                return true;
-            }
-
-            Hex_Coord clicked_hex = resolve_hex(screenX,screenY);
-
-            mouse_move_handeler(map_model.getCrd_to_prv().get_prov_id(clicked_hex), screenX, screenY);
-            return true;
-        }
-
-        @Override
-        public boolean scrolled(int amount) {
-            return false;
-        }
-    }
-
-    private void mouse_move_handeler(Prov_Id clicked_prov_id, int screenX, int screenY) {
+    void mouse_move_handeler(Prov_Id clicked_prov_id, int screenX, int screenY) {
 /*        if (clicked_prov_id.to_int() != -1){
             UI.prov_info.setVisible(true);
             UI.set_prov_tooltip(clicked_prov_id,screenX,screenY);
@@ -260,3 +92,4 @@ public class Risk_Main extends ApplicationAdapter {
 
     }
 }
+

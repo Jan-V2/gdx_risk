@@ -20,7 +20,9 @@ import com.kotcrab.vis.ui.widget.Tooltip;
 import com.kotcrab.vis.ui.widget.VisLabel;
 import com.kotcrab.vis.ui.widget.VisTable;
 import com.kotcrab.vis.ui.widget.VisWindow;
+/*
 
+//todo redo this shit probably in lml
 class UI {
     static Stage stage;
     static Tooltip prov_info;
@@ -95,13 +97,13 @@ class UI {
         }
 
         void update_player_label(){
-            active_player_label.setText("Player "+(Game.active_player + 1)+"'s turn");
+            active_player_label.setText("Player "+"   TODO    "+"'s turn");
             active_player_label.pack();
             active_player_label.setPosition(0,0);
         }
 
         void update_turn_phase_label(){
-            phase_label.setText(Game.State.Turn_State.get_turn_phase_name());
+            phase_label.setText("   TODO    ");
             phase_label.pack();
             phase_label.setPosition(stage.getWidth()-phase_label.getWidth(),0);
         }
@@ -117,8 +119,8 @@ class UI {
 
         void set_default_dialog() {
 
-            if (Game.State.turn_state < 2) {
-                dialog_label.setText("Press enter to end " + Game.State.Turn_State.get_turn_phase_name());
+            if (true) {
+                dialog_label.setText("Press enter to end " + "   TODO    ");
             } else {
                 dialog_label.setText("Press enter to end turn");
             }
@@ -143,7 +145,8 @@ class UI {
         reinforce_button.setVisible(false);//makes the popupmenu invisible and turns in into a normal button
         //TODO doesn't acually turn it into a normal button but not important cuz debug only
 
-        active_player_menu.addItem(new MenuItem("player 1", new ChangeListener() {
+ */
+/*       active_player_menu.addItem(new MenuItem("player 1", new ChangeListener() {
 		@Override
 		public void changed (ChangeEvent event, Actor actor) {
 		    Game.active_player = 0;
@@ -172,7 +175,8 @@ class UI {
 		public void changed (ChangeEvent event, Actor actor) {//TODO temporary
 		    Game.Data.tmp_reinforce();
 		}
-	    });
+	    });*//*
+
 
 
         menuBar.addMenu(active_player_menu);
@@ -190,8 +194,10 @@ class UI {
 
     static void set_prov_tooltip(Prov_Id prov_id, int screenX, int screenY) {
         if (disable_map_layer){
-            prov_info.setVisible(false);
+            prov_info.setVisible(true);
         }else {
+*/
+/*
             screenY = Assets.scr_height-screenY;
             prov_info.setPosition((float)screenX, (float)screenY);
             if (Game.Data.who_owns(prov_id) == Game.active_player){
@@ -208,6 +214,8 @@ class UI {
                         ,VisUI.getSkin());
                 prov_info.setContent(content);
             }
+*//*
+
 
         }
 
@@ -484,3 +492,4 @@ class UI {
         }
     }
 }
+*/

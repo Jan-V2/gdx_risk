@@ -32,17 +32,15 @@ public class Assets {
     static int hexes_per_row;
     static String asset_directory_path;
     static boolean render_infobar_background_bool = false;
-    static int test;
 
     static float sea_color_float[];//background color
     static String[] libgdx_colors;
     static int no_provs;
-    //static HashMap<Prov_Id, Prov_Id[]> navtree;
 
     static int[][] prov_lookup;
 
     static Render renderer;
-    static Map_Model map_model;
+    static Model model;
 
 
     static int[] hex_outline_points;
@@ -52,7 +50,6 @@ public class Assets {
     static Color sea_hex_color;
     static String map_data_file_path;
     static PolygonSprite[] hex_sprite_array;
-    static Pair<Hex_Coord, Integer>[] prov_borders;
     static String[] prov_names;
 
 //todo fix navmap and and border thing also combine them, since they basically do the same thing
@@ -108,7 +105,7 @@ public class Assets {
         loading.load_graphical_assets();
         //loading.load_prov_names();
         renderer = new Render();
-        map_model = new Map_Model(prov_lookup);
+        model = new Model(prov_lookup);
         //navtree=NavTree.build();
     }
 
@@ -119,69 +116,6 @@ public class Assets {
         return prov_names[prov_id.to_int()];
     }
 
-/*
-
-    private static class Prov_edge_verts{
-        // Creates an array containing the vertecies of the edges of provinces in the following format: prov_x, prov_y, vert_num
-        //TODO could be more efficient. draws a lot of lines twice.
-        static void build(){
-
-            ArrayList<Pair<Hex_Coord, Integer>> prov_edge_verts_list = new ArrayList<>();
-            for (int prov_y = 0; prov_y < prov_lookup.get_y_len(); prov_y++) {
-                for (int prov_x = 0; prov_x < prov_lookup.get_x_len(); prov_x++) {
-                    prov_edge_verts_list = check_prov(new Hex_Coord(prov_x, prov_y),prov_edge_verts_list);
-                }
-            }
-
-            prov_borders = prov_edge_verts_list.toArray(new Pair[0]);
-        }
-
-        private static ArrayList<Pair<Hex_Coord, Integer>>
-                   check_prov(Hex_Coord c_prov, ArrayList<Pair<Hex_Coord, Integer>> prov_edge_verts_list){
-            //currentprov is the prov it's checking the borderSegments of
-            //because the id for sea is -1 it should never come up
-            //vert_num is the hex vert index in hex_outline_lines
-
-            prov_edge_verts_list = compare_provs(c_prov.transl_y(1), c_prov, prov_edge_verts_list, 4);
-            prov_edge_verts_list = compare_provs(c_prov.transl_y(-1), c_prov, prov_edge_verts_list, 1);
-            //the part that's different depending on whether the collum is even or not
-            if (c_prov.getX() % 2==0) {
-                prov_edge_verts_list = compare_provs(c_prov.transl_x(1), c_prov, prov_edge_verts_list, 3);
-                prov_edge_verts_list = compare_provs(c_prov.transl_x(-1), c_prov, prov_edge_verts_list, 5);
-                prov_edge_verts_list = compare_provs(c_prov.transl(1, -1), c_prov, prov_edge_verts_list,2);
-                prov_edge_verts_list = compare_provs(c_prov.transl(-1, -1), c_prov, prov_edge_verts_list,0);
-            }else{
-                prov_edge_verts_list = compare_provs(c_prov.transl_x(1), c_prov, prov_edge_verts_list, 2);
-                prov_edge_verts_list = compare_provs(c_prov.transl_x(-1), c_prov, prov_edge_verts_list, 0);
-                prov_edge_verts_list = compare_provs(c_prov.transl(1,1), c_prov, prov_edge_verts_list, 3);
-                prov_edge_verts_list = compare_provs(c_prov.transl(-1, 1), c_prov, prov_edge_verts_list, 5);
-            }
-
-            return prov_edge_verts_list;
-        }
-
-        private static ArrayList<Pair<Hex_Coord, Integer>> compare_provs(Hex_Coord prov, Hex_Coord currentprov
-                , ArrayList<Pair<Hex_Coord, Integer>> prov_edge_verts_list, int vert_num){
-            if (prov_lookup.get_prov_id(currentprov).to_int()!=-1){
-                if (prov.getX()<0|| prov.getX()>prov_lookup.get_y_len()-1|| prov.getY()<0|| prov.getY()>prov_lookup.get_x_len()-1){
-                    //if the coordinate is outside of the hex grid and it it's not from a sea prov it automatically adds a line
-
-                    prov_edge_verts_list.add(new Pair<>(currentprov, vert_num));
-
-                }else{
-                    if (prov_lookup.get_prov_id(currentprov).id() != prov_lookup.get_prov_id(prov).id()){
-                        if (prov_lookup.get_prov_id(prov).to_int() == prov_lookup.get_prov_id(currentprov).to_int()){
-                            System.out.println("not working");
-                        }
-                        prov_edge_verts_list.add(new Pair<>(currentprov, vert_num));
-                    }
-                }
-            }
-            return prov_edge_verts_list;
-        }
-    }
-
-*/
 
     private static class Create_Hex_sprite{
         public static PolygonSprite polygon_sprite_builder(Color color)		{
@@ -238,7 +172,7 @@ public class Assets {
         if (render_infobar_background_bool){
             shape_renderer.begin(ShapeRenderer.ShapeType.Filled);
             shape_renderer.setColor(0.36f,0.36f,0.36f,1f);
-            shape_renderer.rect(0f,0f,(float)Gdx.graphics.getWidth(),UI.info_bar.info_bar_height);
+            shape_renderer.rect(0f,0f,(float)Gdx.graphics.getWidth(),30f);
             shape_renderer.end();
         }
     }

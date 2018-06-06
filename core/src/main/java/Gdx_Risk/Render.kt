@@ -4,7 +4,7 @@ import Gdx_Risk.Assets.*
 import Gdx_Risk.Map.Hex_Coord
 import Gdx_Risk.Map.Screen_Coord
 
-class Render() {
+class Render{
 
     fun update_assets(){
 
